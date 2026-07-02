@@ -1,0 +1,61 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  REGISTRY: us-central1-docker.pkg.dev
+  IMAGE_NAME: supreme-giggle
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker authentication
+        run: |
+          gcloud auth configure-docker ${{ env.REGISTRY }}
+
+      - name: Build and test with Gradle
+        run: |
+          chmod +x gradlew
+          ./gradlew clean build
+
+      - name: Build and publish image to Artifact Registry
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          IMAGE_SHA: ${{ github.sha }}
+          PUBLISH_IMAGE: 'true'
+        run: |
+          ./gradlew bootBuildImage
+
