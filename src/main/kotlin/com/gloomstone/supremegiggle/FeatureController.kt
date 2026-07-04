@@ -11,9 +11,15 @@ class FeatureController(private val featureService: FeatureService) {
         return featureService.getAll()
     }
 
+
     @GetMapping("/features/{id}")
     fun getById(@PathVariable id: String): Feature? {
         return featureService.get(id) ?: throw NotFoundException("Feature with id $id not found")
+    }
+
+    @GetMapping("/features/{id}/state")
+    fun getState(@PathVariable id: String): FeatureState {
+        return featureService.getState(id) ?: throw NotFoundException("Feature with id $id not found")
     }
 
     @PostMapping("/features")

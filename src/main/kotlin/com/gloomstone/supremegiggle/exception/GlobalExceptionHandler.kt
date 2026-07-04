@@ -1,5 +1,6 @@
 package com.gloomstone.supremegiggle.exception
 
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ControllerAdvice
@@ -13,6 +14,8 @@ import java.time.LocalDateTime
  */
 @ControllerAdvice
 class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     @ExceptionHandler(BadRequestException::class)
     fun handleBadRequestException(
@@ -109,6 +112,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         ex: InternalServerErrorException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
+        logger.error("Internal Server Error", ex)
         val errorResponse = ErrorResponse(
             timestamp = LocalDateTime.now(),
             status = HttpStatus.INTERNAL_SERVER_ERROR.value(),
@@ -124,6 +128,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         ex: Exception,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
+        logger.error("Internal Server Error", ex)
         val errorResponse = ErrorResponse(
             timestamp = LocalDateTime.now(),
             status = HttpStatus.INTERNAL_SERVER_ERROR.value(),

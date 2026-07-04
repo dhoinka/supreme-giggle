@@ -1,33 +1,86 @@
 # supreme-giggle
 
-## Firestore storage for shortened URLs
+Spring Boot service for storing and serving **features / feature flags** from **Firestore**.
 
-Shortened URLs can be persisted in Firestore by configuring these properties:
+## Configuration
 
-- `app.firestore.project-id`
-- `app.firestore.credentials-path`
-- `app.firestore.collection` (optional, defaults to `shortenUrls`)
+Application settings live under `app`:
 
-If `project-id` and `credentials-path` are set, the app uses Firestore.
-If they are not set, the app falls back to in-memory storage.
-
-### Local setup
-
-1. Create a GCP service account with Firestore permissions.
-2. Download its JSON key file.
-3. Set values in `src/main/resources/application.yaml` or via environment variables.
-
-Example environment variables:
-
-```bash
-export APP_FIRESTORE_PROJECT_ID="your-gcp-project-id"
-export APP_FIRESTORE_CREDENTIALS_PATH="/absolute/path/to/service-account.json"
-export APP_FIRESTORE_COLLECTION="shortenUrls"
+```yaml
+app:
+  base-url: http://localhost:8080
+  feature-collection: feature-flag-collection
 ```
 
-Run tests:
+Firestore is created with `FirestoreOptions.getDefaultInstance()`, so authentication uses **Google Application Default
+Credentials**.
+
+For local development, authenticate with one of these approaches:
+
+```bash
+gcloud auth application-default login
+```
+
+## API
+
+### Create feature
+
+`POST /features`
+
+```json
+{
+  "name": "checkout-banner",
+  "displayName": "Checkout banner",
+  "description": "Controls the checkout banner",
+  "payload": {
+    "body": "{\"color\":\"green\"}",
+    "format": "json"
+  }
+}
+```
+
+### List features
+
+`GET /features`
+
+Returns full feature documents.
+
+### Get feature by id
+
+`GET /features/{id}`
+
+Returns the full feature document.
+
+### Get feature state
+
+`GET /features/{id}/state`
+
+Returns the lightweight flag state payload:
+
+```json
+{
+  "enabled": true,
+  "payload": {
+    "body": "{\"color\":\"green\"}",
+    "format": "json"
+  }
+}
+```
+
+## Payload formats
+
+Supported payload format values:
+
+- `text`
+- `json`
+- `yaml`
+- `xml`
+- `markdown`
+
+Legacy stored enum names such as `PLAIN_TEXT` are still accepted when reading from Firestore.
+
+## Running tests
 
 ```bash
 ./gradlew test
 ```
-

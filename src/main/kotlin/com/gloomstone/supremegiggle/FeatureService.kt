@@ -14,6 +14,15 @@ class FeatureService(private val featureRepository: FeatureRepository) {
         return featureRepository.getById(id)
     }
 
+    fun getState(id: String): FeatureState? {
+        return featureRepository.getById(id)?.let { feature ->
+            FeatureState(
+                enabled = feature.enabled,
+                payload = feature.payload?.let { PayloadDto(it.body, it.format.value) }
+            )
+        }
+    }
+
     fun create(feature: CreateFeatureDto): Feature {
         return featureRepository.save(feature)
     }

@@ -58,6 +58,45 @@ class FeatureServiceTest {
     }
 
     @Test
+    fun `getState returns enabled and payload`() {
+        val expectedFeature = Feature(
+            id = "feature-1",
+            name = "feature1",
+            displayName = "Feature 1",
+            description = "Description 1",
+            enabled = true,
+            payload = Payload(
+                body = """{"active":true}""",
+                format = PayloadFormat.JSON,
+            ),
+            createdAt = Instant.parse("2026-07-02T18:00:00Z")
+        )
+        whenever(featureRepository.getById("feature-1")).thenReturn(expectedFeature)
+
+        val actual = featureService.getState("feature-1")
+
+        assertEquals(
+            FeatureState(
+                enabled = true,
+                payload = PayloadDto(
+                    body = """{"active":true}""",
+                    format = "json",
+                ),
+            ),
+            actual
+        )
+    }
+
+    @Test
+    fun `getState returns null when repository misses feature`() {
+        whenever(featureRepository.getById("missing")).thenReturn(null)
+
+        val actual = featureService.getState("missing")
+
+        assertNull(actual)
+    }
+
+    @Test
     fun `create saves create dto`() {
         val createFeatureDto = CreateFeatureDto(
             name = "feature1",
@@ -86,7 +125,6 @@ class FeatureServiceTest {
             displayName = "Feature 1",
             description = "Description 1",
             enabled = true,
-            state = true,
             createdAt = Instant.parse("2026-07-02T18:00:00Z")
         )
         whenever(featureRepository.update(feature)).thenReturn(feature)

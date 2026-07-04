@@ -79,6 +79,37 @@ class FeatureControllerTest {
     }
 
     @Test
+    fun `get state returns enabled and payload`() {
+        whenever(featureService.getState("feature-1")).thenReturn(
+            FeatureState(
+                enabled = true,
+                payload = PayloadDto(
+                    body = """{"active":true}""",
+                    format = "json",
+                ),
+            )
+        )
+
+        mvc.perform(get("/features/feature-1/state"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.enabled").value(true))
+            .andExpect(jsonPath("$.payload.body").value("""{"active":true}"""))
+            .andExpect(jsonPath("$.payload.format").value("json"))
+    }
+
+    @Test
+    fun `get state returns not found when feature is missing`() {
+        whenever(featureService.getState("missing")).thenReturn(null)
+
+        mvc.perform(get("/features/missing/state"))
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.status").value(404))
+            .andExpect(jsonPath("$.error").value("Not Found"))
+            .andExpect(jsonPath("$.message").value("Feature with id missing not found"))
+            .andExpect(jsonPath("$.path").value("/features/missing/state"))
+    }
+
+    @Test
     fun `post creates feature`() {
         val createFeatureDto = CreateFeatureDto(
             name = "feature1",

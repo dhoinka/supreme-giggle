@@ -2,6 +2,8 @@ package com.gloomstone.supremegiggle.repository
 
 import com.gloomstone.supremegiggle.CreateFeatureDto
 import com.gloomstone.supremegiggle.Feature
+import com.gloomstone.supremegiggle.Payload
+import com.gloomstone.supremegiggle.PayloadFormat
 import com.gloomstone.supremegiggle.config.AppProperties
 import com.google.cloud.Timestamp
 import com.google.cloud.firestore.DocumentReference
@@ -27,7 +29,7 @@ class FeatureRepository(
             displayName = feature.displayName,
             description = feature.description,
             enabled = false,
-            state = false,
+            payload = feature.payload?.let { Payload(it.body, PayloadFormat.fromValue(it.format)) },
             createdAt = Instant.now(),
         )
     }
@@ -59,7 +61,7 @@ class FeatureRepository(
             displayName = feature.displayName,
             description = feature.description,
             enabled = feature.enabled,
-            state = feature.state,
+            payload = feature.payload,
             createdAt = feature.createdAt,
         )
     }
@@ -80,7 +82,7 @@ class FeatureRepository(
         val displayName = getString("displayName") ?: return null
         val description = getString("description") ?: return null
         val enabled = getBoolean("enabled") ?: return null
-        val state = getBoolean("state") ?: return null
+        val payload = get("payload")?.toPayload()
         val createdAt = getTimestamp("createdAt")?.toInstant() ?: return null
 
         return Feature(
@@ -89,7 +91,7 @@ class FeatureRepository(
             displayName = displayName,
             description = description,
             enabled = enabled,
-            state = state,
+            payload = payload,
             createdAt = createdAt
         )
     }
@@ -101,7 +103,7 @@ class FeatureRepository(
         displayName: String,
         description: String,
         enabled: Boolean,
-        state: Boolean,
+        payload: Payload?,
         createdAt: Instant,
     ): Feature {
         documentReference.set(
@@ -110,7 +112,7 @@ class FeatureRepository(
                 "displayName" to displayName,
                 "description" to description,
                 "enabled" to enabled,
-                "state" to state,
+                "payload" to payload?.toDocument(),
                 "createdAt" to createdAt.toTimestamp(),
                 "expireAt" to Instant.now().plus(7, ChronoUnit.DAYS).toTimestamp(),
             )
@@ -129,4 +131,23 @@ private fun Instant.toTimestamp(): Timestamp {
 
 private fun Timestamp.toInstant(): Instant {
     return Instant.ofEpochSecond(seconds, nanos.toLong())
+}
+
+private fun Any.toPayload(): Payload? {
+    val payloadDocument = this as? Map<*, *> ?: return null
+    val body = payloadDocument["body"] as? String ?: return null
+    val formatName = payloadDocument["format"] as? String ?: return null
+    val format = runCatching { PayloadFormat.fromValue(formatName) }.getOrNull() ?: return null
+
+    return Payload(
+        body = body,
+        format = format
+    )
+}
+
+private fun Payload.toDocument(): Map<String, String> {
+    return mapOf(
+        "body" to body,
+        "format" to format.value,
+    )
 }
