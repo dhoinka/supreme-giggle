@@ -6,6 +6,7 @@ on:
 
 env:
   REGISTRY: us-central1-docker.pkg.dev
+  ARTIFACT_REGISTRY_REPOSITORY: supreme-giggle
   IMAGE_NAME: supreme-giggle
 
 permissions:
@@ -42,20 +43,19 @@ jobs:
 
       - name: Configure Docker authentication
         run: |
-          gcloud auth configure-docker ${{ env.REGISTRY }}
+          gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
 
       - name: Build and test with Gradle
         run: |
           chmod +x gradlew
-          ./gradlew clean build
+          ./gradlew build
 
-      - name: Build and publish image to Artifact Registry
+      - name: Build, tag, and push image to Artifact Registry
         env:
-          REGISTRY: ${{ env.REGISTRY }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGISTRY: ${{ env.REGISTRY }}
+          ARTIFACT_REGISTRY_REPOSITORY: ${{ env.ARTIFACT_REGISTRY_REPOSITORY }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
-          IMAGE_SHA: ${{ github.sha }}
-          PUBLISH_IMAGE: 'true'
         run: |
-          ./gradlew bootBuildImage
-
+          IMAGE_URI="${REGISTRY}/${GCP_PROJECT_ID}/${ARTIFACT_REGISTRY_REPOSITORY}/${IMAGE_NAME}:${GITHUB_SHA}"
+          ./gradlew bootBuildImage --imageName="${IMAGE_URI}" --publishImage

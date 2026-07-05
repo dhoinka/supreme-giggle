@@ -45,26 +45,3 @@ kotlin {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
-
-tasks.named<org.springframework.boot.gradle.tasks.bundling.BootBuildImage>("bootBuildImage") {
-    val imageName = System.getenv("IMAGE_NAME") ?: "supreme-giggle"
-    val registry = System.getenv("REGISTRY") ?: "docker.io"
-    val projectId = System.getenv("GCP_PROJECT_ID") ?: "local"
-    val imageSha = System.getenv("IMAGE_SHA") ?: "latest"
-    val shouldPublish = System.getenv("PUBLISH_IMAGE") == "true"
-
-    builder = "paketobuildpacks/builder-jammy:latest"
-    environment = mapOf(
-        "BP_JVM_VERSION" to "21"
-    )
-
-    // Construct full image name based on registry
-    val fullImageName = if (registry == "docker.io") {
-        "$registry/$imageName:$imageSha"
-    } else {
-        "$registry/$projectId/$imageName:$imageSha"
-    }
-
-    this.imageName.set(fullImageName)
-    publish.set(shouldPublish)
-}
